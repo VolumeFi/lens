@@ -13,5 +13,5 @@ type ChainRegistry interface {
 }
 
 func DefaultChainRegistry(log *zap.Logger) ChainRegistry {
-	return NewCosmosGithubRegistry(log.With(zap.String("registry", "cosmos_github")))
+	return NewCosmosGithubRegistry(log.With(zap.String("registry", "cosmos_github")), nil)
 }

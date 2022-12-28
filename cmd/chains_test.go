@@ -22,6 +22,17 @@ func TestChainsShow_MissingArg(t *testing.T) {
 	require.Empty(t, res.Stdout.String())
 }
 
+func TestChainsShow_NotFoundChain(t *testing.T) {
+	t.Parallel()
+
+	sys := NewSystem(t)
+
+	res := sys.Run(zaptest.NewLogger(t), "chains", "show", "missing")
+	require.Error(t, res.Err)
+	require.Contains(t, res.Stderr.String(), "chain missing not found")
+	require.Empty(t, res.Stdout.String())
+}
+
 func TestChainsShowDefault(t *testing.T) {
 	t.Parallel()
 

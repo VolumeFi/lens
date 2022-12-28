@@ -15,30 +15,32 @@ import (
 )
 
 type CosmosGithubRegistry struct {
-	log *zap.Logger
+	log    *zap.Logger
+	client *github.Client
 }
 
-func NewCosmosGithubRegistry(log *zap.Logger) CosmosGithubRegistry {
-	return CosmosGithubRegistry{log: log}
+func NewCosmosGithubRegistry(log *zap.Logger, c *http.Client) CosmosGithubRegistry {
+	if c == nil {
+		c = http.DefaultClient
+	}
+	return CosmosGithubRegistry{log: log, client: github.NewClient(c)}
 }
 
 func (c CosmosGithubRegistry) ListChains(ctx context.Context) ([]string, error) {
-	client := github.NewClient(http.DefaultClient)
-	var chains []string
-
 	ctx, cancel := context.WithTimeout(ctx, time.Minute*5)
 	defer cancel()
 
-	tree, res, err := client.Git.GetTree(
+	tree, res, err := c.client.Git.GetTree(
 		ctx,
 		"cosmos",
 		"chain-registry",
 		"master",
 		false)
 	if err != nil || res.StatusCode != 200 {
-		return chains, err
+		return nil, err
 	}
 
+	var chains []string
 	for _, entry := range tree.Entries {
 		if *entry.Type == "tree" && !strings.HasPrefix(*entry.Path, ".") {
 			chains = append(chains, *entry.Path)
@@ -48,10 +50,8 @@ func (c CosmosGithubRegistry) ListChains(ctx context.Context) ([]string, error) 
 }
 
 func (c CosmosGithubRegistry) GetChain(ctx context.Context, name string) (ChainInfo, error) {
-	client := github.NewClient(http.DefaultClient)
-
 	chainFileName := path.Join(name, "chain.json")
-	fileContent, _, res, err := client.Repositories.GetContents(
+	fileContent, _, res, err := c.client.Repositories.GetContents(
 		ctx,
 		"cosmos",
 		"chain-registry",
